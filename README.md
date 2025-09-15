@@ -1,5 +1,5 @@
 # Description
-Guildine for deploying infrastructure to cloud environment using IaC tools
+Guildline for deploying infrastructure to cloud environment using IaC tools
 
 # Installation (in MacOS)
  ## Terraform
