@@ -41,6 +41,11 @@ Guildine for deploying infrastructure to cloud environment using IaC tools
         aws lambda invoke --function-name lambda-demo --cli-binary-format raw-in-base64-out --payload file://input.json output.json
     ```
 
+7. Destroy infa
+    ```
+        terraform destroy
+    ```
+
 # Next Step 
 Integrate with Jenkins/Github Actions for CI/CD
     
