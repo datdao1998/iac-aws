@@ -25,7 +25,7 @@ Guildline for deploying infrastructure to cloud environment using IaC tools
 
 4. Build and push image to ECR
     ```
-        cd services
+        cd services/lambda
         sh ecr.sh
     ```
 
@@ -45,6 +45,43 @@ Guildline for deploying infrastructure to cloud environment using IaC tools
     ```
         terraform destroy
     ```
+
+## Ansible
+
+1. Build and push docker image to ECR
+
+    ```
+    cd services
+    sh ec2.sh
+    ```
+
+2. Create IAM role for EC2 (To login ECR and pull ECR image)
+    ![IAM](images/iam-role.png)
+
+3. Create Security Group (For SSH)
+    ![Security Group](images/security-group.png)
+
+4. Create and download key-pair file (.pem)
+    ![Key Pair](images/key-pair.png)
+
+5. Run playbook
+    ```
+        cd ansible
+        ansible-playbook playbooks/ec2_ecr.yml -e @vars.yml
+    ```
+
+6. Check result
+    ```
+        ssh -i <link-to-pem-file> ec2-user@<instance-public-ip>
+        sudo docker images
+    ```
+
+    The final result will be like this 
+    ![Result](images/test-ansible.png) 
+
+
+
+
 
 # Next Step 
 Integrate with Jenkins/Github Actions for CI/CD
