@@ -1,0 +1,10 @@
+key_name: "iac-keypair"
+instance_type: "t2.micro"
+ami_id: "ami-05fd46f12b86c4a6c"  # Replace with a valid AMI ID
+region: "ap-southeast-1"
+security_groups: ["DemoSecurityGroup"]  # Replace with your security group
+instance_name: "Ansible-EC2"
+ecr_url: "184841017566.dkr.ecr.ap-southeast-1.amazonaws.com"  # Replace with your ECR URL
+image_name: "ansible-demo"  # Replace with your image name
+image_tag: "latest"  # Replace with your image tag
+ssh_private_key_file: "/Users/datdq98/Downloads/iac-keypair.pem"  # Replace with the path to your private key file

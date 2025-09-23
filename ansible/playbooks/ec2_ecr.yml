@@ -1,0 +1,90 @@
+- name: Create EC2 and pull ECR image
+  hosts: localhost
+  tasks:
+    - name: Launch EC2 instance
+      amazon.aws.ec2_instance:
+        key_name: "{{ key_name }}" 
+        instance_type: "{{ instance_type }}"
+        image_id: "{{ ami_id }}"
+        region: "{{ region }}"
+        count: 1
+        network_interfaces:
+          - assign_public_ip: true
+        security_groups: "{{ security_groups }}"
+        iam_instance_profile: "ECR-Access-Role"  # Ensure this IAM role exists with necessary permissions
+        tags:
+          Name: "{{ instance_name }}"
+      register: ec2_info
+
+    - name: Debug EC2 info
+      ansible.builtin.debug:
+        var: ec2_info
+      when: ec2_info.instances is defined
+
+    - name: Fail if no instances created
+      ansible.builtin.fail:
+        msg: "No instances created or public IP not assigned"
+      when: ec2_info.instances is not defined or ec2_info.instances | length == 0 or ec2_info.instances[0].public_ip_address is not defined
+
+    - name: Wait for the instance to be running
+      amazon.aws.ec2_instance_info:
+        region: "{{ region }}"
+        filters:
+          "instance-id": "{{ ec2_info.instances[0].instance_id }}"
+      register: instance_info
+      until: instance_info.instances[0].state.name == "running"
+      retries: 10
+      delay: 30
+
+    - name: Add instance to inventory
+      add_host:
+        name: "{{ ec2_info.instances[0].public_ip_address }}"
+        groups: launched
+        ansible_user: ec2-user
+        ansible_ssh_private_key_file: "{{ ssh_private_key_file }}"
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+    - name: Wait for SSH to be available
+      wait_for:
+        host: "{{ ec2_info.instances[0].public_ip_address }}"
+        port: 22
+        delay: 10
+        timeout: 600
+        state: started
+
+- name: Configure EC2 instance
+  hosts: launched
+  become: yes
+  tasks:
+    - name: Install AWS CLI
+      ansible.builtin.package:
+        name: awscli
+        state: present
+
+    - name: Install Docker
+      ansible.builtin.yum:
+        name: docker
+        state: present
+
+    - name: Start Docker service
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Get ECR login password
+      ansible.builtin.command:
+        cmd: aws ecr get-login-password --region {{ region }}
+      register: ecr_password
+      changed_when: false
+
+    - name: Login to ECR
+      ansible.builtin.command:
+        cmd: docker login --username AWS --password {{ ecr_password.stdout }} {{ ecr_url }}
+      changed_when: true
+
+    - name: Pull ECR image
+      ansible.builtin.docker_image:
+        name: "{{ ecr_url }}/{{ image_name }}"
+        tag: "{{ image_tag }}"
+        source: pull
